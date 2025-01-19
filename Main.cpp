@@ -1,318 +1,269 @@
-#include <iostream>
-#include <fstream>
-#include <string>
-#include <conio.h>
-#include <Windows.h>
-#include <math.h>
 #include "LibrarySystem.h"
 #include "GradeManager.h"
+#include <pqxx/pqxx>
 using namespace std;
 
+pqxx::connection conn("postgresql://Kariem:kUkTLW0aqssz4Xd3-3SJXg@street-wizard-7289.j77.aws-us-east-1.cockroachlabs.cloud:26257/School_Management_System?sslmode=verify-full");
 
 
-// Structure for students
-struct student
-{
-    string fname;
-    string lname;
-    string Registration;
-    string ClassMajor;
-    string grade;
-    int Gpa;
-    string GPA;
-    string accelarated;
-    string studentData;
-    string studentName;
-    string newGrade;
-    string Borrowing_Book;
-}studentData;
 
-//Classes
-struct classes
-{
-    string S_C_math;
-    int I_C_M_Math = 50;
-    int I_C_math;
-}Class;
+// Structure for student data
+struct Student {
+	string firstName;
+	string lastName;
+	string registration;
+	string classMajor;
+	string grade;
+	int gpa;
+	bool accelerated;
+	bool borrowingBook;
+};
 
-struct teacher
-{
-    string fst_name;
-    string lst_name;
-    string qualification;
-    string exp;
-    string pay;
-    string subj;
-    string lec;
-    string serves;
-    string cel_no;
+// Structure for teacher data
+struct Teacher {
+	string fst_name;
+	string lst_name;
+	string qualification;
+	string exp;
+	string serves;
+	string subj;
+	string lec;
+	string pay;
+	string cel_no;
+};
 
-}tech[50];
-
-void getlastLine(string filename)
-{
-    ifstream fin;
-    fin.open(filename);
-    if (fin.is_open()) {
-        fin.seekg(-1, ios_base::end);
-
-        bool keepLooping = true;
-        while (keepLooping) {
-            char ch;
-            fin.get(ch);
-
-            if ((int)fin.tellg() <= 1) {
-                fin.seekg(0);
-                keepLooping = false;
-            }
-            else if (ch == '\n') {
-                keepLooping = false;
-            }
-            else {
-                fin.seekg(-2, ios_base::cur);
-            }
-        }
-
-        string lastLine;
-        getline(fin, lastLine);
-        Class.S_C_math = lastLine;
-        Class.I_C_math = stoi(lastLine);
-
-
-        fin.close();
-    }
-
-
+// Function to add a student to the database
+void addStudentToDatabase(pqxx::connection& conn, const Student& student) {
+	pqxx::work W(conn);
+	string query = "INSERT INTO students (fname, lname, registration, class_major, grade, gpa, accelerated, borrowing_book) "
+		"VALUES (" +
+		W.quote(student.firstName) + ", " +
+		W.quote(student.lastName) + ", " +
+		W.quote(student.registration) + ", " +
+		W.quote(student.classMajor) + ", " +
+		W.quote(student.grade) + ", " +
+		to_string(student.gpa) + ", " +
+		(student.accelerated ? "TRUE" : "FALSE") + ", " +
+		(student.borrowingBook ? "TRUE" : "FALSE") + ")";
+	W.exec(query);
+	W.commit();
+	cout << "Student added to the database successfully.\n";
 }
 
+// Function to display student details from the database
+void displayStudentFromDatabase(pqxx::connection& conn, const string& firstName) {
+	pqxx::work W(conn);
+	pqxx::result R = W.exec("SELECT * FROM students WHERE fname = " + W.quote(firstName));
+
+	if (R.empty()) {
+		cout << "No record found.\n";
+	}
+	else {
+		for (const auto& row : R) {
+			cout << "First Name: " << row["fname"].c_str() << endl;
+			cout << "Last Name: " << row["lname"].c_str() << endl;
+			cout << "Registration: " << row["registration"].c_str() << endl;
+			cout << "Class: " << row["class_major"].c_str() << endl;
+			cout << "Grade: " << row["grade"].c_str() << endl;
+			cout << "GPA: " << row["gpa"].as<int>() << endl;
+			cout << "Accelerated: " << (row["accelerated"].as<bool>() ? "Yes" : "No") << endl;
+			cout << "Borrowing Book: " << (row["borrowing_book"].as<bool>() ? "Yes" : "No") << endl;
+		}
+	}
+}
+
+// Student information menu
 void studentInfo() {
-
 	char choice;
-	string find;
-	string srch;
-	int i = 0, j;
+	Student student;
 
-	while (1)
-	{
-
-		cout << "\t\t\t Student Information And Data\n\n\n";
-		cout << "Enter Your choice: " << endl;
-		cout << "1.Create New Entry" << endl;
-		cout << "2.Find and Display entry" << endl;
-		cout << "3.Jump to  main" << endl;
+	while (true) {
+		cout << "\n\n\tStudent Information Menu\n";
+		cout << "1. Add New Student\n";
+		cout << "2. Find and Display Student\n";
+		cout << "3. Back to Main Menu\n";
+		cout << "Enter your choice: ";
 		cin >> choice;
-		switch (choice)
-		{
-		case '1':
-		{
-			ofstream f1("Students.txt", ios::app);
-			for (i = 0; choice != 'n' && choice != 'N'; i++)
-			{
-				cout << "Enter First name: ";
-				cin >> studentData.fname;
-				cout << "Enter Last name: ";
-				cin >> studentData.lname;
-				cout << "Enter Registration number: ";
-				cin >> studentData.Registration;
-				cout << "Enter class: ";
-				cin >> studentData.ClassMajor;
-				cout << "Enter Students Grade: ";
-				cin >> studentData.grade;
-				cout << "Enter Students Gpa: ";
-				cin >> studentData.GPA;
-				cout << "Enter True if student is borrowing a book enter False if not: ";
-				cin >> studentData.Borrowing_Book;
-				studentData.Gpa = stoi(studentData.GPA);
-				if (studentData.Gpa >= 3.6)
-				{
-					studentData.accelarated = "True";
-				}
-				f1 << studentData.fname << endl << studentData.lname << endl << studentData.Registration << endl << studentData.ClassMajor << endl << studentData.grade << endl << studentData.GPA << endl << studentData.accelarated << endl << studentData.Borrowing_Book << endl;
 
-				cout << "Do you want to countinue Adding student? Y to  continue N to stop: ";
-				cin >> choice;
-			}
+		if (choice == '1') {
+			cout << "Enter First Name: ";
+			cin >> student.firstName;
+			cout << "Enter Last Name: ";
+			cin >> student.lastName;
+			cout << "Enter Registration Number: ";
+			cin >> student.registration;
+			cout << "Enter Class Major: ";
+			cin >> student.classMajor;
+			cout << "Enter Grade: ";
+			cin >> student.grade;
+			cout << "Enter GPA: ";
+			cin >> student.gpa;
+			cout << "Is Accelerated (1 for Yes, 0 for No): ";
+			cin >> student.accelerated;
+			cout << "Is Borrowing Book (1 for Yes, 0 for No): ";
+			cin >> student.borrowingBook;
 
-			f1.close();
+			addStudentToDatabase(conn, student);
 		}
-		continue;
-
-		case '2':
-		{
-			ifstream f2("Students.txt");
-			cout << "Enter First name to be displayed: ";
-			cin >> find;
-			cout << endl;
-			int notFound = 0;
-			while (getline(f2, studentData.fname)) {
-				if (studentData.fname == find)
-				{
-					notFound = 1;
-
-					cout << "First Name: " << studentData.fname << endl;
-					getline(f2, studentData.lname);
-					cout << "Last Name: " << studentData.lname << endl;
-
-					getline(f2, studentData.Registration);
-					cout << "Registration No number: " << studentData.Registration << endl;
-					getline(f2, studentData.ClassMajor);
-					cout << "Class: " << studentData.ClassMajor << endl;
-					getline(f2, studentData.grade);
-					if (studentData.ClassMajor == "math")
-					{
-						Class.I_C_math += 1;
-					}
-					cout << "Grade: " << studentData.grade << endl;
-					getline(f2, studentData.GPA);
-					cout << "Gpa: " << studentData.GPA << endl;
-					getline(f2, studentData.accelarated);
-					cout << "Accelarated: " << studentData.accelarated << endl << endl;
-				}
-
-			}
-			f2.close();
-			if (notFound == 0) {
-
-				cout << "No Record Found\n" << endl;
-			}
-			cout << "Press any key two times to proceed" << endl << endl;
-			_getch();
-			_getch();
-
+		else if (choice == '2') {
+			string firstName;
+			cout << "Enter First Name to Search: ";
+			cin >> firstName;
+			displayStudentFromDatabase(conn, firstName);
 		}
-		continue;
-		case '3':
-		{
-			system("cls");
+		else if (choice == '3') {
 			break;
-
 		}
+		else {
+			cout << "Invalid choice! Try again.\n";
 		}
-		break;
 	}
-
 }
 
-void teacherInfo()
-{
+void createTeacherEntry();
+void findTeacher();
+void teacherMenu();
 
+void teacherInfo() {
 	char choice;
-	string find;
-	string srch;
-	int i = 0, j;
 
-	while (1)
-	{
+	while (true) {
 		system("cls");
-		cout << "\t\t\tTeachers Info and Data\n\n\n";
-		cout << "Enter your choice: " << endl;
-		cout << "1.Create new entry\n";
-		cout << "2.Find and display\n";
-		cout << "3.Jump to main\n";
+		cout << "\t\t\tTeachers Info and Data\n\n";
+		cout << "Enter your choice: \n";
+		cout << "1. Create new entry\n";
+		cout << "2. Find and display\n";
+		cout << "3. Back to main menu\n";
+		cout << "Enter your choice: ";
 		cin >> choice;
 
-		switch (choice)
-		{
+		switch (choice) {
 		case '1':
-		{
-			ofstream t1("Teachers.txt", ios::app);
-			for (i = 0; choice != 'n' && choice != 'N'; i++)
-			{
-				if ((choice == 'y') || (choice == 'Y') || (choice == '1'))
-				{
-					cout << "Enter First name: ";
-					cin >> tech[i].fst_name;
-					cout << "Enter Last name: ";
-					cin >> tech[i].lst_name;
-					cout << "Enter qualification: ";
-					cin >> tech[i].qualification;
-					cout << "Enter experiance(year): ";
-					cin >> tech[i].exp;
-					cout << "Enter number of year in this School: ";
-					cin >> tech[i].serves;
-					cout << "Enter Subject whos teach: ";
-					cin >> tech[i].subj;
-					cout << "Enter Lecture(per Week): ";
-					cin >> tech[i].lec;
-					cout << "Enter pay: ";
-					cin >> tech[i].pay;
-					cout << "Enter Phone Number: ";
-					cin >> tech[i].cel_no;
-
-
-					t1 << tech[i].fst_name << endl << tech[i].lst_name << endl << tech[i].qualification << endl << tech[i].exp << endl << tech[i].serves << endl << tech[i].subj << endl << tech[i].lec << endl << tech[i].pay << endl << tech[i].cel_no << endl;
-
-					cout << "Do you want to countinue Adding student? Y to  continue N to stop: ";
-					cin >> choice;
-
-				}
-			}
-
-			system("cls");
-
-			t1.close();
+			createTeacherEntry();
 			break;
-		}
 		case '2':
-		{
-			ifstream t2("Teachers.txt");
-			cout << "Enter First name to be displayed: ";
-			cin >> find;
-			cout << endl;
-			int notFound = 0;
-			while (getline(t2, studentData.fname)) {
-
-				if (tech[j].fst_name == find)
-				{
-					notFound = 1;
-					cout << "First name: " << tech[j].fst_name << endl;
-					getline(t2, tech[j].lst_name);
-					cout << "Last name: " << tech[j].lst_name << endl;
-					getline(t2, tech[j].qualification);
-					cout << "Qualification: " << tech[j].qualification << endl;
-					getline(t2, tech[j].exp);
-					cout << "Experience: " << tech[j].exp << endl;
-
-					getline(t2, tech[j].serves);
-					cout << "number of year in this School: " << tech[j].serves << endl;
-
-					getline(t2, tech[j].subj);
-					cout << "Subject whos teach: " << tech[j].subj << endl;
-
-					getline(t2, tech[j].lec);
-					cout << "Enter Lecture(per Week): " << tech[j].lec << endl;
-					getline(t2, tech[j].pay);
-					cout << "pay: " << tech[j].pay << endl;
-
-					getline(t2, tech[j].cel_no);
-					cout << "Phone Number: " << tech[j].cel_no << endl << endl;
-				}
-
-			}
-			t2.close();
-			if (notFound == 0) {
-
-				cout << "No Record Found" << endl;
-			}
-			cout << "Press any key two times to proceed";
-			_getch();
-			_getch();
-
-		}
-		continue;
-		case '3':
-		{
+			findTeacher();
 			break;
-			system("cls");
+		case '3':
+			return;
+		default:
+			cout << "Invalid choice. Please try again.\n";
+			system("pause");
 		}
-		}
-		break;
 	}
+}
+
+void createTeacherEntry() {
+	system("cls");
+	cout << "\t\t\tCreate New Teacher Entry\n\n";
+
+	ofstream t1("Teachers.txt", ios::app);
+
+	Teacher teacher;
+	char choice;
+
+	do {
+		cout << "Enter First Name: ";
+		cin >> teacher.fst_name;
+		cout << "Enter Last Name: ";
+		cin >> teacher.lst_name;
+		cout << "Enter Qualification: ";
+		cin >> teacher.qualification;
+		cout << "Enter Years of Experience: ";
+		cin >> teacher.exp;
+		cout << "Enter Years in School: ";
+		cin >> teacher.serves;
+		cout << "Enter Subject Taught: ";
+		cin >> teacher.subj;
+		cout << "Enter Lectures per Week: ";
+		cin >> teacher.lec;
+		cout << "Enter Pay: ";
+		cin >> teacher.pay;
+		cout << "Enter Phone Number: ";
+		cin >> teacher.cel_no;
+
+		// Save to file
+		t1 << teacher.fst_name << endl
+			<< teacher.lst_name << endl
+			<< teacher.qualification << endl
+			<< teacher.exp << endl
+			<< teacher.serves << endl
+			<< teacher.subj << endl
+			<< teacher.lec << endl
+			<< teacher.pay << endl
+			<< teacher.cel_no << endl;
+
+		cout << "Do you want to continue adding teachers? (Y/N): ";
+		cin >> choice;
+	} while (choice == 'Y' || choice == 'y');
+
+	t1.close();
+	cout << "\nTeacher entries added successfully.\n";
+	system("pause");
+}
+
+void findTeacher() {
+	system("cls");
+	cout << "\t\t\tFind Teacher Information\n\n";
+
+	ifstream t2("Teachers.txt");
+	if (!t2) {
+		cout << "Error: Could not open file.\n";
+		system("pause");
+		return;
+	}
+
+	string find;
+	cout << "Enter First Name to search: ";
+	cin >> find;
+
+	string line;
+	int notFound = 1;
+	while (getline(t2, line)) {
+		if (line == find) {
+			notFound = 0;
+			Teacher teacher;
+
+			teacher.fst_name = line;
+			getline(t2, teacher.lst_name);
+			getline(t2, teacher.qualification);
+			getline(t2, teacher.exp);
+			getline(t2, teacher.serves);
+			getline(t2, teacher.subj);
+			getline(t2, teacher.lec);
+			getline(t2, teacher.pay);
+			getline(t2, teacher.cel_no);
+
+			cout << "\n--- Teacher Information ---\n";
+			cout << "First Name: " << teacher.fst_name << endl;
+			cout << "Last Name: " << teacher.lst_name << endl;
+			cout << "Qualification: " << teacher.qualification << endl;
+			cout << "Experience (Years): " << teacher.exp << endl;
+			cout << "Years in School: " << teacher.serves << endl;
+			cout << "Subject Taught: " << teacher.subj << endl;
+			cout << "Lectures per Week: " << teacher.lec << endl;
+			cout << "Pay: " << teacher.pay << endl;
+			cout << "Phone Number: " << teacher.cel_no << endl;
+			break;
+		}
+	}
+
+	t2.close();
+
+	if (notFound) {
+		cout << "\nNo record found for the given name.\n";
+	}
+
+	cout << "Press any key to return to the menu.";
+	_getch();
 }
 
 
 int main()
 {
+	pqxx::connection conn("postgresql://Kariem:<kUkTLW0aqssz4Xd3-3SJXg>@street-wizard-7289.j77.aws-us-east-1.cockroachlabs.cloud:26257/School_Management_System?sslmode=verify-full");
+	pqxx::nontransaction work(conn);
+
 	char choice;
 	string find;
 	string srch;
@@ -331,7 +282,7 @@ int main()
 		cout << "5.Exit program" << endl;
 		
 		cin >> choice;
-		
+			
 
 
 		system("cls");
@@ -350,13 +301,6 @@ int main()
 		}
 		case '3':
 		{
-			ifstream c2("Class.txt");
-
-			getlastLine("Class.txt");
-			cout << "Math Class: " << Class.S_C_math << "/" << Class.I_C_M_Math << endl;
-			cout << "Press any key two times to proceed" << endl;
-			_getch();
-			_getch();
 			continue;
 		}
 
