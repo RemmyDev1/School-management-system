@@ -3,7 +3,7 @@
 #include <pqxx/pqxx>
 using namespace std;
 
-pqxx::connection conn("postgresql://Kariem:kUkTLW0aqssz4Xd3-3SJXg@street-wizard-7289.j77.aws-us-east-1.cockroachlabs.cloud:26257/School_Management_System?sslmode=verify-full");
+pqxx::connection conn("");
 
 
 
