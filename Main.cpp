@@ -3,7 +3,7 @@
 #include <pqxx/pqxx>
 using namespace std;
 
-pqxx::connection conn("");
+pqxx::connection conn("DB URL");
 
 
 
